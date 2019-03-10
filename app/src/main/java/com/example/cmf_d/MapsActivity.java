@@ -28,6 +28,7 @@ import com.google.android.libraries.places.api.model.Place;
 import com.google.android.libraries.places.api.model.PlaceLikelihood;
 import com.google.android.libraries.places.api.net.FindCurrentPlaceRequest;
 import com.google.android.libraries.places.api.net.PlacesClient;
+import com.example.cmf_d.MicrowaveInfoWindow;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -51,6 +52,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     List<LatLng> placeLatLngs = new ArrayList<>();
     List<String> placeNames = new ArrayList<>();
     List<MicrowaveDescription> placeDescriptions = new ArrayList<>();
+    List<MicrowaveInfo> placeMicrowaveInfos = new ArrayList<>();
 
     public enum MicrowavePlaces {
         CSSS_CUBE(0), MACMILLAN_AGORA(1), BUCH_TOWER(2), BUCH_D_ARTS(3), NEST(4), SAUDER_EXCH(5),
@@ -67,6 +69,35 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    public class MicrowaveInfo {
+        private LatLng latLng;
+        private String title;
+        private MicrowaveDescription description;
+
+        public MicrowaveInfo(LatLng latLng, String title, MicrowaveDescription microwaveDescription){
+            this.latLng = latLng;
+            this.title = title;
+            this.description = microwaveDescription;
+        }
+
+        public MicrowaveInfo(int id){
+            this.latLng = placeLatLngs.get(id);
+            this.title = placeNames.get(id);
+            this.description = placeDescriptions.get(id);
+        }
+
+        public LatLng getLatLng(){
+            return this.latLng;
+        }
+
+        public String getTitle(){
+            return this.title;
+        }
+
+        public MicrowaveDescription getDescription(){
+            return this.description;
+        }
+    }
     public class MicrowaveDescription {
         private int waitTime;
         private String state;
@@ -219,6 +250,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 0);
     }
 
+    public List<LatLng> getPlaceLatLngs(){
+        return placeLatLngs;
+    }
+
+    public List<String> getPlaceNames(){
+        return placeNames;
+    }
+
+    public List<MicrowaveDescription> getPlaceDescriptions(){
+        return placeDescriptions;
+    }
     private void initMicrowaveLatLngs() {
         placeLatLngs.add(new LatLng(49.261228, -123.248809)); // CSSS_CUBE
         placeLatLngs.add(new LatLng(49.261288, -123.251227)); // MACMILLAN_AGORA
@@ -273,10 +315,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             "Number of microwaves: " + placeDescriptions.get(place.getValue()).getNumMicrowaves() + "\n" +
                             "Estimated wait time: " + placeDescriptions.get(place.getValue()).getWaitTime() + "\n" +
                             "Condition: " + placeDescriptions.get(place.getValue()).getState() + "\n");
+            final MicrowaveInfo microwaveInfo = new MicrowaveInfo(place.getValue());
             mMap.addMarker(options);
             mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
                 @Override
                 public boolean onMarkerClick(Marker marker) {
+
+                    mMap.setInfoWindowAdapter(new MicrowaveInfoWindow(microwaveInfo, getApplicationContext()));
                     marker.showInfoWindow();
                     return false;
                 }
