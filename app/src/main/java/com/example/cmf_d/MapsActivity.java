@@ -53,6 +53,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private PlacesClient placesClient;
     private static final int DEFAULT_ZOOM = 15;
     private static final int CLOSEUP_ZOOM = 25;
+    private boolean allMarkersVisible = false;
 
     List<LatLng> placeLatLngs = new ArrayList<>();
     List<String> placeNames = new ArrayList<>();
@@ -78,17 +79,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         private LatLng latLng;
         private String title;
         private MicrowaveDescription description;
+        private int id;
 
-        public MicrowaveInfo(LatLng latLng, String title, MicrowaveDescription microwaveDescription){
+        public MicrowaveInfo(LatLng latLng, String title, MicrowaveDescription microwaveDescription, int id){
             this.latLng = latLng;
             this.title = title;
             this.description = microwaveDescription;
+            this.id = id;
         }
 
         public MicrowaveInfo(int id){
             this.latLng = placeLatLngs.get(id);
             this.title = placeNames.get(id);
             this.description = placeDescriptions.get(id);
+            this.id = id;
         }
 
         public LatLng getLatLng(){
@@ -101,6 +105,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         public MicrowaveDescription getDescription(){
             return this.description;
+        }
+
+        public int getId(){
+            return this.id;
         }
     }
     public class MicrowaveDescription {
@@ -136,6 +144,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private EditText mSearchText;
     private ImageView mGps;
+    private ImageView mGetNearest;
+    private ImageView mShowAll;
 
     //------------------------methods-----------------
     @Override
@@ -144,6 +154,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         setContentView(R.layout.activity_maps);
         mSearchText = findViewById(R.id.input_search);
         mGps = findViewById(R.id.ic_gps);
+        mGetNearest = findViewById(R.id.ic_find_nearest);
+        mShowAll = findViewById(R.id.ic_show_all);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -171,6 +183,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onClick(View view) {
                 getDeviceLocation();
+            }
+        });
+
+        mGetNearest.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                if(allMarkersVisible){
+                    mMap.clear();
+                }
+                int id = getNearestMicrowaveID(currentLocation, placeMicrowaveInfos);
+                drawMarker(id);
+            }
+        });
+
+        mShowAll.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                if(!allMarkersVisible){
+                    initMicrowaveMarkers();
+                    allMarkersVisible = true;
+                }else{
+                    mMap.clear();
+                    allMarkersVisible = false;
+                }
             }
         });
         hideSoftKeyboard();
@@ -216,7 +252,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         initMicrowaveLatLngs(); // Add microwave locations to list
         initPlaceNames(); // Add place names to list
         initPlaceDescriptions();
-        initMicrowaveMarkers(); // Add microwave markers to map
+        initMicrowaveInfos();
         initSearchBar();
     }
 
@@ -333,28 +369,69 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         placeDescriptions.add(new MicrowaveDescription(0, "Unknown",2)); // ORCHARD_RES
     }
 
-    private void initMicrowaveMarkers() {
-        for (MicrowavePlaces place : MicrowavePlaces.values()) {
-            MarkerOptions options = new MarkerOptions()
-                    .position(placeLatLngs.get(place.getValue()))
-                    .title(placeNames.get(place.getValue()))
-                    .snippet("Microwave Info:" + "\n" +
-                            "Number of microwaves: " + placeDescriptions.get(place.getValue()).getNumMicrowaves() + "\n" +
-                            "Estimated wait time: " + placeDescriptions.get(place.getValue()).getWaitTime() + "\n" +
-                            "Condition: " + placeDescriptions.get(place.getValue()).getState() + "\n");
-            final MicrowaveInfo microwaveInfo = new MicrowaveInfo(place.getValue());
-            mMap.addMarker(options);
-            mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
-                @Override
-                public boolean onMarkerClick(Marker marker) {
-
-                    mMap.setInfoWindowAdapter(new MicrowaveInfoWindow(microwaveInfo, getApplicationContext()));
-                    marker.showInfoWindow();
-                    return false;
-                }
-            });
-            Log.d(TAG, "initMicrowaveMarkers: Added marker: lat: " + options.getPosition().latitude + ", lng: " + options.getPosition().longitude + ", name: " + options.getTitle());
+    private void initMicrowaveInfos(){
+        for(MicrowavePlaces place : MicrowavePlaces.values()){
+            placeMicrowaveInfos.add(new MicrowaveInfo(place.getValue()));
         }
+    }
+
+    private void initMicrowaveMarkers() {
+        for (MicrowaveInfo microwaveInfo : placeMicrowaveInfos) {
+            drawMarker(microwaveInfo);
+        }
+    }
+
+    private void drawMarker(MicrowaveInfo microwaveInfo){
+        MarkerOptions options = new MarkerOptions()
+                .position(microwaveInfo.getLatLng())
+                .title(microwaveInfo.getTitle())
+                .snippet("Microwave Info:" + "\n" +
+                        "Number of microwaves: " + microwaveInfo.description.getNumMicrowaves() + "\n" +
+                        "Estimated wait time: " + microwaveInfo.description.getWaitTime() + "\n" +
+                        "Condition: " + microwaveInfo.description.getState() + "\n");
+        mMap.addMarker(options);
+        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                mMap.setInfoWindowAdapter(new MicrowaveInfoWindow(microwaveInfo, getApplicationContext()));
+                marker.showInfoWindow();
+                return false;
+            }
+        });
+    }
+
+    private void drawMarker(int id){
+        MarkerOptions options = new MarkerOptions()
+                .position(placeLatLngs.get(id))
+                .title(placeNames.get(id))
+                .snippet("Microwave Info:" + "\n" +
+                        "Number of microwaves: " + placeDescriptions.get(id).getNumMicrowaves() + "\n" +
+                        "Estimated wait time: " + placeDescriptions.get(id).getWaitTime() + "\n" +
+                        "Condition: " + placeDescriptions.get(id).getState() + "\n");
+        final MicrowaveInfo microwaveInfo = new MicrowaveInfo(id);
+        mMap.addMarker(options);
+        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                mMap.setInfoWindowAdapter(new MicrowaveInfoWindow(microwaveInfo, getApplicationContext()));
+                marker.showInfoWindow();
+                return false;
+            }
+        });
+    }
+
+    public int getNearestMicrowaveID(LatLng currentLocation, List<MicrowaveInfo> microwaveList){
+        double shortestDistance = DistanceCalculator.getDistance(currentLocation,microwaveList.get(0).latLng);
+        int microwaveId = microwaveList.get(0).getId();
+
+        for(MicrowaveInfo microwaveInfo : microwaveList){
+            if(shortestDistance > DistanceCalculator.getDistance(currentLocation,microwaveInfo.latLng)){
+                shortestDistance = DistanceCalculator.getDistance(currentLocation,microwaveInfo.latLng);
+                microwaveId = microwaveInfo.getId();
+            }
+        }
+
+        return microwaveId;
     }
 
 }
