@@ -23,20 +23,12 @@ public class HomeActivity extends AppCompatActivity {
             }
         });
 
-        SettingsMenu.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                openMenuActivity();
-            }
-        });
-        
+
+
     }
     public void openMapsActivity(){
         Intent intent = new Intent(this, MapsActivity.class);
         startActivity(intent);
     }
-    public void openMenuActivity(){
-        Intent intent2 = new Intent(this, MenuActivity.class);
-        startActivity(intent2);
-    }
+    
 }
