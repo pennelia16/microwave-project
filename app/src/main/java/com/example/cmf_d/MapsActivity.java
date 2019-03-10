@@ -1,14 +1,26 @@
 package com.example.cmf_d;
 
+import android.content.Context;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 
 import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -21,7 +33,9 @@ import com.google.android.libraries.places.api.model.Place;
 import com.google.android.libraries.places.api.model.PlaceLikelihood;
 import com.google.android.libraries.places.api.net.FindCurrentPlaceRequest;
 import com.google.android.libraries.places.api.net.PlacesClient;
+import com.example.cmf_d.MicrowaveInfoWindow;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -31,12 +45,19 @@ import java.util.ArrayList;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
+    //-------------------global vars---------------
+
     private GoogleMap mMap;
     private LatLng currentLocation;
     private static final String TAG = "MapActivity";
+    private PlacesClient placesClient;
+    private static final int DEFAULT_ZOOM = 15;
+    private static final int CLOSEUP_ZOOM = 25;
 
     List<LatLng> placeLatLngs = new ArrayList<>();
     List<String> placeNames = new ArrayList<>();
+    List<MicrowaveDescription> placeDescriptions = new ArrayList<>();
+    List<MicrowaveInfo> placeMicrowaveInfos = new ArrayList<>();
 
     public enum MicrowavePlaces {
         CSSS_CUBE(0), MACMILLAN_AGORA(1), BUCH_TOWER(2), BUCH_D_ARTS(3), NEST(4), SAUDER_EXCH(5),
@@ -53,10 +74,76 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    public class MicrowaveInfo {
+        private LatLng latLng;
+        private String title;
+        private MicrowaveDescription description;
+
+        public MicrowaveInfo(LatLng latLng, String title, MicrowaveDescription microwaveDescription){
+            this.latLng = latLng;
+            this.title = title;
+            this.description = microwaveDescription;
+        }
+
+        public MicrowaveInfo(int id){
+            this.latLng = placeLatLngs.get(id);
+            this.title = placeNames.get(id);
+            this.description = placeDescriptions.get(id);
+        }
+
+        public LatLng getLatLng(){
+            return this.latLng;
+        }
+
+        public String getTitle(){
+            return this.title;
+        }
+
+        public MicrowaveDescription getDescription(){
+            return this.description;
+        }
+    }
+    public class MicrowaveDescription {
+        private int waitTime;
+        private String state;
+        private int numMicrowaves;
+
+        public MicrowaveDescription(){
+            this.waitTime = 0;
+            this.state = "Unknown";
+            this.numMicrowaves = 0;
+        }
+
+        public MicrowaveDescription(int waitTime, String state, int numMicrowaves){
+            this.waitTime = waitTime;
+            this.state = state;
+            this.numMicrowaves = numMicrowaves;
+        }
+
+        public int getWaitTime(){
+            return this.waitTime;
+        }
+
+        public String getState(){
+            return this.state;
+        }
+
+        public int getNumMicrowaves(){
+            return this.numMicrowaves;
+        }
+    }
+    //-------------------------widgets----------------
+
+    private EditText mSearchText;
+    private ImageView mGps;
+
+    //------------------------methods-----------------
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+        mSearchText = findViewById(R.id.input_search);
+        mGps = findViewById(R.id.ic_gps);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -64,6 +151,52 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapFragment.getMapAsync(this);
     }
 
+    private void initSearchBar(){
+
+        mSearchText.setOnEditorActionListener((new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
+                if(actionId == EditorInfo.IME_ACTION_SEARCH
+                  || actionId == EditorInfo.IME_ACTION_DONE
+                  || keyEvent.getAction() == KeyEvent.ACTION_DOWN
+                  || keyEvent.getAction() == KeyEvent.KEYCODE_ENTER){
+
+                    geoLocate();
+                }
+                return false;
+            }
+        }));
+
+        mGps.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view) {
+                getDeviceLocation();
+            }
+        });
+        hideSoftKeyboard();
+    }
+
+    private void hideSoftKeyboard(){
+        InputMethodManager inputMethodManager = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
+        inputMethodManager.hideSoftInputFromWindow(mSearchText.getWindowToken(),0);
+    }
+
+    private void geoLocate(){
+        String searchString = mSearchText.getText().toString();
+
+        Geocoder geocoder = new Geocoder(this);
+        List<Address> list = new ArrayList<>();
+        try{
+            list = geocoder.getFromLocationName(searchString, 1);
+        } catch (IOException e){
+            Log.d(TAG, "geoLocate: IOException: " + e.getMessage());
+        }
+        if(list.size() > 0) {
+            Address address = list.get(0);
+
+            moveCamera(new LatLng(address.getLatitude(), address.getLongitude()), DEFAULT_ZOOM, address.getAddressLine(0));
+        }
+    }
 
     /**
      * Manipulates the map once available.
@@ -77,9 +210,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        Places.initialize(getApplicationContext(), "AIzaSyBBXymrVHpKofAJZJiaMO7sfyOL1AsUlgw");
+        if(getDeviceLocation()){
+            mMap.setMyLocationEnabled(true);
+        }
+        initMicrowaveLatLngs(); // Add microwave locations to list
+        initPlaceNames(); // Add place names to list
+        initPlaceDescriptions();
+        initMicrowaveMarkers(); // Add microwave markers to map
+        initSearchBar();
+    }
 
-        PlacesClient placesClient = Places.createClient(this);
+    private boolean getDeviceLocation(){
+        boolean ret = false;
+        Places.initialize(getApplicationContext(), "AIzaSyBBXymrVHpKofAJZJiaMO7sfyOL1AsUlgw");
+        placesClient = Places.createClient(this);
 
         // Use fields to define the data types to return.
         List<Place.Field> placeFields = Arrays.asList(Place.Field.LAT_LNG);
@@ -90,12 +234,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // Call findCurrentPlace and handle the response (first check that the user has granted permission).
         if (ContextCompat.checkSelfPermission(this, ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            ret = true;
             placesClient.findCurrentPlace(request).addOnSuccessListener(((response) -> {
                 for (PlaceLikelihood placeLikelihood : response.getPlaceLikelihoods()) {
                     currentLocation = placeLikelihood.getPlace().getLatLng();
                     break;
                 }
-                mMap.addMarker(new MarkerOptions().position(currentLocation).title("Current Location"));
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15.0f));
             })).addOnFailureListener((exception) -> {
                 if (exception instanceof ApiException) {
@@ -108,10 +252,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             // See https://developer.android.com/training/permissions/requesting
             getLocationPermission();
         }
+        return ret;
+    }
+    private void moveCamera(LatLng latLng, float zoom, String title) {
+        Log.d(TAG, "moveCamera: moving camera to: lat: " + latLng.latitude + ", lng: " + latLng.longitude);
 
-        initMicrowaveLatLngs(); // Add microwave locations to list
-        initPlaceNames(); // Add place names to list
-        initMicrowaveMarkers(); // Add microwave markers to map
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoom));
+
+        MarkerOptions options = new MarkerOptions()
+                .position(latLng)
+                .title(title);
+        mMap.addMarker(options);
     }
 
     private void getLocationPermission() {
@@ -126,6 +277,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 0);
     }
 
+    public List<LatLng> getPlaceLatLngs(){
+        return placeLatLngs;
+    }
+
+    public List<String> getPlaceNames(){
+        return placeNames;
+    }
+
+    public List<MicrowaveDescription> getPlaceDescriptions(){
+        return placeDescriptions;
+    }
     private void initMicrowaveLatLngs() {
         placeLatLngs.add(new LatLng(49.261228, -123.248809)); // CSSS_CUBE
         placeLatLngs.add(new LatLng(49.261288, -123.251227)); // MACMILLAN_AGORA
@@ -156,10 +318,41 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         placeNames.add("null"); // ORCHARD_RES
     }
 
+    private void initPlaceDescriptions() {
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",2)); // CSSS_CUBE
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",3)); // MACMILLAN_AGORA
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",2)); // BUCH_TOWER
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",2)); // BUCH_D_ARTS
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",4)); // NEST
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",6)); // SAUDER_EXCH
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",1)); // GEOGRAPHY
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",2)); // SUS_LADHA
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",4)); // ESSS_KAISER
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",2)); // TOTEM_RES
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",2)); // VANIER_RES
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",2)); // ORCHARD_RES
+    }
+
     private void initMicrowaveMarkers() {
         for (MicrowavePlaces place : MicrowavePlaces.values()) {
-            MarkerOptions options = new MarkerOptions().position(placeLatLngs.get(place.getValue())).title(placeNames.get(place.getValue()));
+            MarkerOptions options = new MarkerOptions()
+                    .position(placeLatLngs.get(place.getValue()))
+                    .title(placeNames.get(place.getValue()))
+                    .snippet("Microwave Info:" + "\n" +
+                            "Number of microwaves: " + placeDescriptions.get(place.getValue()).getNumMicrowaves() + "\n" +
+                            "Estimated wait time: " + placeDescriptions.get(place.getValue()).getWaitTime() + "\n" +
+                            "Condition: " + placeDescriptions.get(place.getValue()).getState() + "\n");
+            final MicrowaveInfo microwaveInfo = new MicrowaveInfo(place.getValue());
             mMap.addMarker(options);
+            mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+                @Override
+                public boolean onMarkerClick(Marker marker) {
+
+                    mMap.setInfoWindowAdapter(new MicrowaveInfoWindow(microwaveInfo, getApplicationContext()));
+                    marker.showInfoWindow();
+                    return false;
+                }
+            });
             Log.d(TAG, "initMicrowaveMarkers: Added marker: lat: " + options.getPosition().latitude + ", lng: " + options.getPosition().longitude + ", name: " + options.getTitle());
         }
     }
