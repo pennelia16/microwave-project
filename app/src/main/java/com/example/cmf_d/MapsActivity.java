@@ -210,7 +210,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        getDeviceLocation();
+        if(getDeviceLocation()){
+            mMap.setMyLocationEnabled(true);
+        }
         initMicrowaveLatLngs(); // Add microwave locations to list
         initPlaceNames(); // Add place names to list
         initPlaceDescriptions();
@@ -218,7 +220,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         initSearchBar();
     }
 
-    private void getDeviceLocation(){
+    private boolean getDeviceLocation(){
+        boolean ret = false;
         Places.initialize(getApplicationContext(), "AIzaSyBBXymrVHpKofAJZJiaMO7sfyOL1AsUlgw");
         placesClient = Places.createClient(this);
 
@@ -231,12 +234,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // Call findCurrentPlace and handle the response (first check that the user has granted permission).
         if (ContextCompat.checkSelfPermission(this, ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            ret = true;
             placesClient.findCurrentPlace(request).addOnSuccessListener(((response) -> {
                 for (PlaceLikelihood placeLikelihood : response.getPlaceLikelihoods()) {
                     currentLocation = placeLikelihood.getPlace().getLatLng();
                     break;
                 }
-                mMap.addMarker(new MarkerOptions().position(currentLocation).title("Current Location"));
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15.0f));
             })).addOnFailureListener((exception) -> {
                 if (exception instanceof ApiException) {
@@ -249,6 +252,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             // See https://developer.android.com/training/permissions/requesting
             getLocationPermission();
         }
+        return ret;
     }
     private void moveCamera(LatLng latLng, float zoom, String title) {
         Log.d(TAG, "moveCamera: moving camera to: lat: " + latLng.latitude + ", lng: " + latLng.longitude);
