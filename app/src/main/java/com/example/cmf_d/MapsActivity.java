@@ -147,7 +147,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     break;
                 }
                 mMap.addMarker(new MarkerOptions().position(currentLocation).title("Current Location"));
-                moveCamera(currentLocation, DEFAULT_ZOOM, "Current Location");
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15.0f));
             })).addOnFailureListener((exception) -> {
                 if (exception instanceof ApiException) {
                     ApiException apiException = (ApiException) exception;
