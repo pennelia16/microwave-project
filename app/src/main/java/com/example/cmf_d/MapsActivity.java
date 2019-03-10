@@ -2,6 +2,7 @@ package com.example.cmf_d;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.location.Address;
 import android.location.Geocoder;
 import android.support.v4.app.ActivityCompat;
@@ -21,6 +22,7 @@ import android.widget.TextView;
 
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.gms.location.LocationServices;
@@ -54,7 +56,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private PlacesClient placesClient;
     private static final int DEFAULT_ZOOM = 15;
     private static final int CLOSEUP_ZOOM = 25;
-    private boolean allMarkersVisible = false;
+    private boolean allMarkersVisible = true;
 
     List<LatLng> placeLatLngs = new ArrayList<>();
     List<String> placeNames = new ArrayList<>();
@@ -247,6 +249,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+        try {
+            // Customise the styling of the base map using a JSON object defined
+            // in a raw resource file.
+            boolean success = googleMap.setMapStyle(
+                    MapStyleOptions.loadRawResourceStyle(
+                            this, R.raw.style_json));
+
+            if (!success) {
+                Log.e(TAG, "Style parsing failed.");
+            }
+        } catch (Resources.NotFoundException e) {
+            Log.e(TAG, "Can't find style. Error: ", e);
+        }
         if(getDeviceLocation()){
             mMap.setMyLocationEnabled(true);
         }
@@ -342,31 +357,31 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private void initPlaceNames() {
         placeNames.add("Computer Science Student Society"); // CSSS_CUBE
-        placeNames.add("null"); // MACMILLAN_AGORA
-        placeNames.add("null"); // BUCH_TOWER
-        placeNames.add("null"); // BUCH_D_ARTS
-        placeNames.add("null"); // NEST
-        placeNames.add("null"); // SAUDER_EXCH
-        placeNames.add("null"); // GEOGRAPHY
-        placeNames.add("null"); // SUS_LADHA
-        placeNames.add("null"); // ESSS_KAISER
-        placeNames.add("null"); // TOTEM_RES
-        placeNames.add("null"); // VANIER_RES
-        placeNames.add("null"); // ORCHARD_RES
+        placeNames.add("Macmillan Agora Cafe"); // MACMILLAN_AGORA
+        placeNames.add("Buchanan Tower"); // BUCH_TOWER
+        placeNames.add("Buchanan D"); // BUCH_D_ARTS
+        placeNames.add("AMS Student Nest"); // NEST
+        placeNames.add("Sauder Exchange Cafe"); // SAUDER_EXCH
+        placeNames.add("Geography Students Lounge"); // GEOGRAPHY
+        placeNames.add("Abdul Ladha"); // SUS_LADHA
+        placeNames.add("Fred Kaiser"); // ESSS_KAISER
+        placeNames.add("Totem Commonsblock"); // TOTEM_RES
+        placeNames.add("Vanier Commonsblock"); // VANIER_RES
+        placeNames.add("Orchard Commonsblock"); // ORCHARD_RES
     }
 
     private void initPlaceDescriptions() {
-        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",2)); // CSSS_CUBE
+        placeDescriptions.add(new MicrowaveDescription(0, "Dirty",2)); // CSSS_CUBE
         placeDescriptions.add(new MicrowaveDescription(0, "Unknown",3)); // MACMILLAN_AGORA
         placeDescriptions.add(new MicrowaveDescription(0, "Unknown",2)); // BUCH_TOWER
-        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",2)); // BUCH_D_ARTS
+        placeDescriptions.add(new MicrowaveDescription(0, "Clean",2)); // BUCH_D_ARTS
         placeDescriptions.add(new MicrowaveDescription(0, "Unknown",4)); // NEST
-        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",6)); // SAUDER_EXCH
+        placeDescriptions.add(new MicrowaveDescription(0, "Clean",6)); // SAUDER_EXCH
         placeDescriptions.add(new MicrowaveDescription(0, "Unknown",1)); // GEOGRAPHY
         placeDescriptions.add(new MicrowaveDescription(0, "Unknown",2)); // SUS_LADHA
-        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",4)); // ESSS_KAISER
+        placeDescriptions.add(new MicrowaveDescription(0, "Broken",4)); // ESSS_KAISER
         placeDescriptions.add(new MicrowaveDescription(0, "Unknown",2)); // TOTEM_RES
-        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",2)); // VANIER_RES
+        placeDescriptions.add(new MicrowaveDescription(0, "Broken",2)); // VANIER_RES
         placeDescriptions.add(new MicrowaveDescription(0, "Unknown",2)); // ORCHARD_RES
     }
 
@@ -409,7 +424,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .snippet("Microwave Info:" + "\n" +
                         "Number of microwaves: " + placeDescriptions.get(id).getNumMicrowaves() + "\n" +
                         "Estimated wait time: " + placeDescriptions.get(id).getWaitTime() + "\n" +
-                        "Condition: " + placeDescriptions.get(id).getState() + "\n");
+                        "Condition: " + placeDescriptions.get(id).getState() + "\n")
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.microwave_icon));
         final MicrowaveInfo microwaveInfo = new MicrowaveInfo(id);
         mMap.addMarker(options);
         mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {

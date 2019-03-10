@@ -47,8 +47,8 @@
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:layout_below="@+id/relLayout1"
-        android:layout_alignParentRight="true"
-        android:layout_marginRight="10dp"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="10dp"
         android:layout_marginTop="10dp"
         android:scaleType="centerCrop"
         android:id="@+id/ic_gps"
@@ -58,22 +58,38 @@
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:layout_alignStart="@id/relLayout1"
-        android:layout_above="@id/ic_find_nearest"
+        android:layout_above="@id/show_all_text"
         android:layout_marginEnd="10dp"
         android:layout_marginBottom="10dp"
         android:scaleType="centerCrop"
         android:id="@+id/ic_show_all"
         android:src="@drawable/ic_show_all"/>
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Show All Microwaves"
+        android:layout_above="@id/ic_find_nearest"
+        android:textColor="#b3994d"
+        android:id="@+id/show_all_text"/>
+
     <ImageView
         android:layout_width="40dp"
         android:layout_height="40dp"
-        android:layout_alignStart="@id/relLayout1"
-        android:layout_alignBottom="@id/map"
         android:layout_marginEnd="10dp"
         android:layout_marginBottom="10dp"
         android:scaleType="centerCrop"
+        android:layout_above="@+id/get_nearest_text"
         android:id="@+id/ic_find_nearest"
         android:src="@drawable/ic_get_nearest"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Get Nearest Microwave"
+        android:textColor="#b3994d"
+        android:layout_alignStart="@id/relLayout1"
+        android:id="@+id/get_nearest_text"
+        android:layout_alignBottom="@id/map"/>
 
     </RelativeLayout>

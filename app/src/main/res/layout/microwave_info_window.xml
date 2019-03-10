@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="horizontal" android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/white_border"
+    android:background="@drawable/grey_infowindow"
     android:padding="10dp">
 
     <LinearLayout
@@ -11,51 +11,46 @@
         android:orientation="vertical">
 
         <TextView
+            android:id="@+id/title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/title"
             android:layout_gravity="center_horizontal"
             android:ellipsize="end"
+            android:fontFamily="@font/jomhuria"
             android:singleLine="true"
-            android:textColor="#000"
+            android:textColor="#000080"
             android:textSize="14sp"
-            android:textStyle="bold"/>
+            android:textStyle="bold" />
 
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
             android:id="@+id/numMicrowaves"
-            android:ellipsize="end"
-            android:maxLines="10"
-            android:textSize="14sp"
-            android:textColor="#000"/>
-
-        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="@font/jomhuria"
+            android:maxLines="10"
+            android:textColor="#000"
+            android:textSize="14sp" />
+
+        <TextView
             android:id="@+id/waitTime"
-            android:ellipsize="end"
-            android:maxLines="10"
-            android:textSize="14sp"
-            android:textColor="#000"/>
-
-        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/description"
             android:ellipsize="end"
+            android:fontFamily="@font/jomhuria"
             android:maxLines="10"
-            android:textSize="14sp"
-            android:textColor="#000"/>
+            android:textColor="#000"
+            android:textSize="14sp" />
 
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
             android:id="@+id/state"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:ellipsize="end"
+            android:fontFamily="@font/jomhuria"
             android:maxLines="10"
-            android:textSize="14sp"
-            android:textColor="#000"/>
+            android:textColor="#000"
+            android:textSize="14sp" />
 
     </LinearLayout>
 
