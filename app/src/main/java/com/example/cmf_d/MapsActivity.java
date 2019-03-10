@@ -20,6 +20,7 @@ import android.widget.TextView;
 
 
 import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.gms.location.LocationServices;
@@ -388,7 +389,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .snippet("Microwave Info:" + "\n" +
                         "Number of microwaves: " + microwaveInfo.description.getNumMicrowaves() + "\n" +
                         "Estimated wait time: " + microwaveInfo.description.getWaitTime() + "\n" +
-                        "Condition: " + microwaveInfo.description.getState() + "\n");
+                        "Condition: " + microwaveInfo.description.getState() + "\n")
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.microwave_icon));
         mMap.addMarker(options);
         mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
