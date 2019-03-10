@@ -1,11 +1,17 @@
 package com.example.cmf_d;
 
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.view.KeyEvent;
+import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
+import android.widget.TextView;
 
 
 import com.google.android.gms.common.api.ApiException;
@@ -22,6 +28,7 @@ import com.google.android.libraries.places.api.model.PlaceLikelihood;
 import com.google.android.libraries.places.api.net.FindCurrentPlaceRequest;
 import com.google.android.libraries.places.api.net.PlacesClient;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -31,9 +38,14 @@ import java.util.ArrayList;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
+    //-------------------global vars---------------
+
     private GoogleMap mMap;
     private LatLng currentLocation;
     private static final String TAG = "MapActivity";
+    private PlacesClient placesClient;
+    private static final int DEFAULT_ZOOM = 15;
+    private static final int CLOSEUP_ZOOM = 25;
 
     List<LatLng> placeLatLngs = new ArrayList<>();
     List<String> placeNames = new ArrayList<>();
@@ -53,10 +65,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+
+    //-------------------------widgets----------------
+
+    private EditText mSearchText;
+
+    //------------------------methods-----------------
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+        mSearchText = findViewById(R.id.input_search);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -64,6 +83,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapFragment.getMapAsync(this);
     }
 
+    private void initSearchBar(){
+
+        mSearchText.setOnEditorActionListener((new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
+                if(actionId == EditorInfo.IME_ACTION_SEARCH
+                  || actionId == EditorInfo.IME_ACTION_DONE
+                  || keyEvent.getAction() == KeyEvent.ACTION_DOWN
+                  || keyEvent.getAction() == KeyEvent.KEYCODE_ENTER){
+
+                    geoLocate();
+                }
+                return false;
+            }
+        }));
+    }
+
+    private void geoLocate(){
+        String searchString = mSearchText.getText().toString();
+
+        Geocoder geocoder = new Geocoder(this);
+        List<Address> list = new ArrayList<>();
+        try{
+            list = geocoder.getFromLocationName(searchString, 1);
+        } catch (IOException e){
+            Log.d(TAG, "geoLocate: IOException: " + e.getMessage());
+        }
+        if(list.size() > 0) {
+            Address address = list.get(0);
+
+            moveCamera(new LatLng(address.getLatitude(), address.getLongitude()), DEFAULT_ZOOM, address.getAddressLine(0));
+        }
+    }
 
     /**
      * Manipulates the map once available.
@@ -78,8 +130,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         Places.initialize(getApplicationContext(), "AIzaSyBBXymrVHpKofAJZJiaMO7sfyOL1AsUlgw");
-
-        PlacesClient placesClient = Places.createClient(this);
+        placesClient = Places.createClient(this);
 
         // Use fields to define the data types to return.
         List<Place.Field> placeFields = Arrays.asList(Place.Field.LAT_LNG);
@@ -96,7 +147,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     break;
                 }
                 mMap.addMarker(new MarkerOptions().position(currentLocation).title("Current Location"));
-                mMap.moveCamera(CameraUpdateFactory.newLatLng(currentLocation));
+                moveCamera(currentLocation, DEFAULT_ZOOM, "Current Location");
             })).addOnFailureListener((exception) -> {
                 if (exception instanceof ApiException) {
                     ApiException apiException = (ApiException) exception;
@@ -108,10 +159,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             // See https://developer.android.com/training/permissions/requesting
             getLocationPermission();
         }
-
         initMicrowaveLatLngs(); // Add microwave locations to list
         initPlaceNames(); // Add place names to list
         initMicrowaveMarkers(); // Add microwave markers to map
+        initSearchBar();
+    }
+
+    private void moveCamera(LatLng latLng, float zoom, String title) {
+        Log.d(TAG, "moveCamera: moving camera to: lat: " + latLng.latitude + ", lng: " + latLng.longitude);
+
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoom));
+
+        MarkerOptions options = new MarkerOptions()
+                .position(latLng)
+                .title(title);
+        mMap.addMarker(options);
     }
 
     private void getLocationPermission() {
