@@ -15,6 +15,7 @@ import android.widget.TextView;
 
 
 import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -49,6 +50,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     List<LatLng> placeLatLngs = new ArrayList<>();
     List<String> placeNames = new ArrayList<>();
+    List<MicrowaveDescription> placeDescriptions = new ArrayList<>();
 
     public enum MicrowavePlaces {
         CSSS_CUBE(0), MACMILLAN_AGORA(1), BUCH_TOWER(2), BUCH_D_ARTS(3), NEST(4), SAUDER_EXCH(5),
@@ -65,7 +67,35 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    public class MicrowaveDescription {
+        private int waitTime;
+        private String state;
+        private int numMicrowaves;
 
+        public MicrowaveDescription(){
+            this.waitTime = 0;
+            this.state = "Unknown";
+            this.numMicrowaves = 0;
+        }
+
+        public MicrowaveDescription(int waitTime, String state, int numMicrowaves){
+            this.waitTime = waitTime;
+            this.state = state;
+            this.numMicrowaves = numMicrowaves;
+        }
+
+        public int getWaitTime(){
+            return this.waitTime;
+        }
+
+        public String getState(){
+            return this.state;
+        }
+
+        public int getNumMicrowaves(){
+            return this.numMicrowaves;
+        }
+    }
     //-------------------------widgets----------------
 
     private EditText mSearchText;
@@ -161,6 +191,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         initMicrowaveLatLngs(); // Add microwave locations to list
         initPlaceNames(); // Add place names to list
+        initPlaceDescriptions();
         initMicrowaveMarkers(); // Add microwave markers to map
         initSearchBar();
     }
@@ -218,10 +249,38 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         placeNames.add("null"); // ORCHARD_RES
     }
 
+    private void initPlaceDescriptions() {
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",2)); // CSSS_CUBE
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",3)); // MACMILLAN_AGORA
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",2)); // BUCH_TOWER
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",2)); // BUCH_D_ARTS
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",4)); // NEST
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",6)); // SAUDER_EXCH
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",1)); // GEOGRAPHY
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",2)); // SUS_LADHA
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",4)); // ESSS_KAISER
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",2)); // TOTEM_RES
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",2)); // VANIER_RES
+        placeDescriptions.add(new MicrowaveDescription(0, "Unknown",2)); // ORCHARD_RES
+    }
+
     private void initMicrowaveMarkers() {
         for (MicrowavePlaces place : MicrowavePlaces.values()) {
-            MarkerOptions options = new MarkerOptions().position(placeLatLngs.get(place.getValue())).title(placeNames.get(place.getValue()));
+            MarkerOptions options = new MarkerOptions()
+                    .position(placeLatLngs.get(place.getValue()))
+                    .title(placeNames.get(place.getValue()))
+                    .snippet("Microwave Info:" + "\n" +
+                            "Number of microwaves: " + placeDescriptions.get(place.getValue()).getNumMicrowaves() + "\n" +
+                            "Estimated wait time: " + placeDescriptions.get(place.getValue()).getWaitTime() + "\n" +
+                            "Condition: " + placeDescriptions.get(place.getValue()).getState() + "\n");
             mMap.addMarker(options);
+            mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+                @Override
+                public boolean onMarkerClick(Marker marker) {
+                    marker.showInfoWindow();
+                    return false;
+                }
+            });
             Log.d(TAG, "initMicrowaveMarkers: Added marker: lat: " + options.getPosition().latitude + ", lng: " + options.getPosition().longitude + ", name: " + options.getTitle());
         }
     }
