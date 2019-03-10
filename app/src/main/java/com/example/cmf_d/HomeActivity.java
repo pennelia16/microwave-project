@@ -15,19 +15,21 @@ public class HomeActivity extends AppCompatActivity {
         setContentView(R.layout.activity_home);
 
         FindMicrowave =(Button) findViewById(R.id.FindMicrowave);
-        SettingsMenu = (Button) findViewById(R.id.SettingsMenu);
+        //SettingsMenu = (Button) findViewById(R.id.SettingsMenu);
         FindMicrowave.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v){
                 openMapsActivity();
             }
         });
+
         SettingsMenu.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 openMenuActivity();
             }
         });
+        
     }
     public void openMapsActivity(){
         Intent intent = new Intent(this, MapsActivity.class);

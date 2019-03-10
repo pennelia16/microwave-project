@@ -12,16 +12,17 @@
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
         android:layout_centerHorizontal="true"
-        android:text="@+string/find_microwave" />
-
+        android:text="@string/find_microwave" />
+<!--
     <Button
         android:id="@+id/SettingsMenu"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/FindMicrowave"
         android:layout_centerHorizontal="true"
+        android:text="Settings Menu"
         android:layout_marginTop="22dp" />
-
+-->
     <ImageView
         android:id="@+id/imageView"
         android:layout_width="wrap_content"
