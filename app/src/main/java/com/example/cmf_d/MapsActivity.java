@@ -1,5 +1,6 @@
 package com.example.cmf_d;
 
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
@@ -9,8 +10,12 @@ import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.View;
+import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 
@@ -130,6 +135,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     //-------------------------widgets----------------
 
     private EditText mSearchText;
+    private ImageView mGps;
 
     //------------------------methods-----------------
     @Override
@@ -137,6 +143,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
         mSearchText = findViewById(R.id.input_search);
+        mGps = findViewById(R.id.ic_gps);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -159,6 +166,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 return false;
             }
         }));
+
+        mGps.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view) {
+                getDeviceLocation();
+            }
+        });
+        hideSoftKeyboard();
+    }
+
+    private void hideSoftKeyboard(){
+        InputMethodManager inputMethodManager = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
+        inputMethodManager.hideSoftInputFromWindow(mSearchText.getWindowToken(),0);
     }
 
     private void geoLocate(){
@@ -190,6 +210,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+        getDeviceLocation();
+        initMicrowaveLatLngs(); // Add microwave locations to list
+        initPlaceNames(); // Add place names to list
+        initPlaceDescriptions();
+        initMicrowaveMarkers(); // Add microwave markers to map
+        initSearchBar();
+    }
+
+    private void getDeviceLocation(){
         Places.initialize(getApplicationContext(), "AIzaSyBBXymrVHpKofAJZJiaMO7sfyOL1AsUlgw");
         placesClient = Places.createClient(this);
 
@@ -220,13 +249,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             // See https://developer.android.com/training/permissions/requesting
             getLocationPermission();
         }
-        initMicrowaveLatLngs(); // Add microwave locations to list
-        initPlaceNames(); // Add place names to list
-        initPlaceDescriptions();
-        initMicrowaveMarkers(); // Add microwave markers to map
-        initSearchBar();
     }
-
     private void moveCamera(LatLng latLng, float zoom, String title) {
         Log.d(TAG, "moveCamera: moving camera to: lat: " + latLng.latitude + ", lng: " + latLng.longitude);
 
