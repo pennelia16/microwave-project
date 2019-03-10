@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Cmd-f</string>
+    <string name="app_name">Microwave Finder</string>
     <string name="title_activity_maps">Map</string>
     <string name="find_microwave">Find Microwave</string>
 </resources>
